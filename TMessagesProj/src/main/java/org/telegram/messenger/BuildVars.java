@@ -25,7 +25,7 @@ public class BuildVars {
     public static boolean CHECK_UPDATES = true;
     public static boolean NO_SCOPED_STORAGE = Build.VERSION.SDK_INT <= 29;
     public static String BUILD_VERSION_STRING = BuildConfig.BUILD_VERSION_STRING;
-    public static int APP_ID = 4;
+    public static int APP_ID = 4; // TODO: replace
     public static String APP_HASH = "014b35b6184100b085b0d0572f9b5103";
 
     // SafetyNet key for Google Identity SDK, set it to empty to disable
@@ -74,7 +74,7 @@ public class BuildVars {
     private static Boolean betaApp;
     public static boolean isBetaApp() {
         if (betaApp == null) {
-            betaApp = ApplicationLoader.applicationContext != null && "org.telegram.messenger.beta".equals(ApplicationLoader.applicationContext.getPackageName());
+            betaApp = ApplicationLoader.applicationContext != null && "dev.lowderplay.contest.beta".equals(ApplicationLoader.applicationContext.getPackageName());
         }
         return betaApp;
     }
