@@ -2298,8 +2298,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
         cameraExpanded = true;
 
+        cameraView.destroy(false, null);
         storyRecorder = StoryRecorder.getInstance(parentAlert.baseFragment.getParentActivity(), UserConfig.selectedAccount);
-        storyRecorder.open(null);
+
+        storyRecorder.open(null, true, true);
 
 //        if (cameraView == null || cameraInitAnimation != null || parentAlert.isDismissed()) {
 //            return;

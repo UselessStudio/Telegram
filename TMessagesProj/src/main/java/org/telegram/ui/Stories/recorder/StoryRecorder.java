@@ -533,14 +533,19 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     }
 
     public void open(SourceView sourceView) {
-        open(sourceView, true);
+        open(sourceView, true, false);
     }
 
     public void open(SourceView sourceView, boolean animated) {
+        open(sourceView, animated, false);
+    }
+
+    public void open(SourceView sourceView, boolean animated, boolean isChatAttachment) {
         if (isShown) {
             return;
         }
 
+        this.isChatAttachment = isChatAttachment;
         isReposting = false;
         prepareClosing = false;
 //        privacySelectorHintOpened = false;
@@ -553,6 +558,14 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
 
         cameraViewThumb.setImageDrawable(getCameraThumb());
+        if(isChatAttachment) {
+            backButton.setImageResource(R.drawable.pip_close);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                previewContainer.setOutlineProvider(null);
+            }
+        } else {
+            backButton.setImageResource(R.drawable.msg_photo_back);
+        }
 
         if (botId == 0) {
             StoriesController.StoryLimit storyLimit = MessagesController.getInstance(currentAccount).getStoriesController().checkStoryLimit();
@@ -1443,6 +1456,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 previewH = H - underControls - navbar - statusbar;
                 previewW = (int) Math.ceil(previewH * 9f / 16f);
             }
+
+            if (isChatAttachment && currentEditMode == EDIT_MODE_NONE) {
+                previewW = W;
+                previewH = H - (currentPage == PAGE_PREVIEW ? insetBottom : 0);
+            }
             underControls = Utilities.clamp(H - previewH - (underStatusBar ? 0 : statusbar), dp(68), dp(48));
 
             int flags = getSystemUiVisibility();
@@ -1556,7 +1574,12 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 b = t + previewH + underControls;
             }
 
-            containerView.layout(l, t, r, b);
+            if (isChatAttachment && currentEditMode == EDIT_MODE_NONE) {
+                containerView.layout(l, 0, r, H);
+            } else {
+                containerView.layout(l, t, r, b);
+            }
+
             flashViews.backgroundView.layout(0, 0, W, H);
             if (thanosEffect != null) {
                 thanosEffect.layout(0, 0, W, H);
@@ -1703,7 +1726,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
         @Override
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-            final int t = underStatusBar ? insetTop : 0;
+            final int t = underStatusBar || isChatAttachment ? insetTop : 0;
+            int b = isChatAttachment ? navbarContainer.getMeasuredHeight() : 0;
+            if (isChatAttachment && currentPage == PAGE_CAMERA) {
+                b += insetBottom;
+            }
 
             final int w = right - left;
             final int h = bottom - top;
@@ -1711,9 +1738,9 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             previewContainer.layout(0, 0, previewW, previewH);
             previewContainer.setPivotX(previewW * .5f);
             actionBarContainer.layout(0, t, previewW, t + actionBarContainer.getMeasuredHeight());
-            controlContainer.layout(0, previewH - controlContainer.getMeasuredHeight(), previewW, previewH);
-            navbarContainer.layout(0, previewH, previewW, previewH + navbarContainer.getMeasuredHeight());
-            captionContainer.layout(0, 0, previewW, previewH);
+            controlContainer.layout(0, previewH - controlContainer.getMeasuredHeight() - b, previewW, previewH - b);
+            navbarContainer.layout(0, previewH - b, previewW, previewH + navbarContainer.getMeasuredHeight() - b);
+            captionContainer.layout(0, 0, previewW, previewH - b);
             if (captionEditOverlay != null) {
                 captionEditOverlay.layout(0, 0, w, h);
             }
@@ -1829,6 +1856,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     private View captionEditOverlay;
 
     private boolean isReposting;
+    private boolean isChatAttachment;
     private long botId;
     private String botLang;
     private TLRPC.InputMedia botEdit;
@@ -4414,6 +4442,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             }
         }
         if (fromPage == PAGE_CAMERA) {
+            if(isChatAttachment && toPage == PAGE_CAMERA) {
+                backButton.setImageResource(R.drawable.pip_close);
+            } else {
+                backButton.setImageResource(R.drawable.msg_photo_back);
+            }
             setCameraFlashModeIcon(null, true);
             saveLastCameraBitmap(() -> cameraViewThumb.setImageDrawable(getCameraThumb()));
             if (draftSavedHint != null) {
