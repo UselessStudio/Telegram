@@ -8,6 +8,8 @@ import android.graphics.PointF;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
@@ -549,10 +551,11 @@ public class DualCameraView extends CameraView {
         boolean def = (
             SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE &&
             Camera.getNumberOfCameras() > 1 &&
-            SharedConfig.allowPreparingHevcPlayers()
+            SharedConfig.allowPreparingHevcPlayers() &&
+            context != null && supportsDualCameraStream(context)
         );
         if (def) {
-            def = context != null && context.getPackageManager().hasSystemFeature("android.hardware.camera.concurrent");
+            def = context.getPackageManager().hasSystemFeature("android.hardware.camera.concurrent");
             if (!def && withWhitelist) {
                 int hash = (Build.MANUFACTURER + " " + Build.DEVICE).toUpperCase().hashCode();
                 for (int i = 0; i < dualWhitelistByDevice.length; ++i) {
@@ -581,6 +584,32 @@ public class DualCameraView extends CameraView {
 
     public static boolean roundDualAvailableStatic(Context context) {
         return MessagesController.getGlobalMainSettings().getBoolean("rounddual_available", roundDualAvailableDefault(context));
+    }
+    public static boolean supportsDualCameraStream(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            return false;
+        }
+
+        CameraManager cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        try {
+            String[] cameraIdList = cameraManager.getCameraIdList();
+            for (String cameraId : cameraIdList) {
+                CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+                int[] capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                boolean supported = false;
+                for (final int capability : capabilities) {
+                    if (capability == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA) {
+                        supported = true;
+                        break;
+                    }
+                }
+                if(!supported) return false;
+            }
+            return true;
+        } catch (CameraAccessException e) {
+            FileLog.e(e);
+            return false;
+        }
     }
 
     public static boolean roundDualAvailableDefault(Context context) {
