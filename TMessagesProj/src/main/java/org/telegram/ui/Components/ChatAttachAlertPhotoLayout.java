@@ -95,6 +95,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.Cells.PhotoAttachCameraCell;
 import org.telegram.ui.Cells.PhotoAttachPermissionCell;
@@ -104,6 +105,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.PhotoViewer;
 import org.telegram.ui.Stars.StarsIntroActivity;
 import org.telegram.ui.Stories.recorder.AlbumButton;
+import org.telegram.ui.Stories.recorder.StoryEntry;
 import org.telegram.ui.Stories.recorder.StoryRecorder;
 
 import java.io.ByteArrayOutputStream;
@@ -2292,6 +2294,58 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     boolean cameraExpanded;
     StoryRecorder storyRecorder;
+
+    private class ChatAttachmentDelegate implements StoryRecorder.ChatAttachmentDelegate {
+        private MediaController.PhotoEntry fromStoryEntry(StoryEntry storyEntry) {
+            if (storyEntry == null) return null;
+
+            int bucketId = 0;
+            int imageId = 0;
+            long dateTaken = System.currentTimeMillis();
+
+            MediaController.PhotoEntry photoEntry = new MediaController.PhotoEntry(
+                    bucketId,
+                    imageId,
+                    dateTaken,
+                    storyEntry.file.getAbsolutePath(),
+                    storyEntry.orientation,
+                    storyEntry.isVideo,
+                    storyEntry.width,
+                    storyEntry.height,
+                    0
+            );
+
+            photoEntry.invert = storyEntry.invert;
+            photoEntry.isVideo = storyEntry.isVideo;
+            photoEntry.thumbPath = storyEntry.thumbPath;
+            photoEntry.duration = (int) (storyEntry.duration / 1000L);
+            photoEntry.gradientTopColor = storyEntry.gradientTopColor;
+            photoEntry.gradientBottomColor = storyEntry.gradientBottomColor;
+
+            photoEntry.isMuted = false;
+            photoEntry.canDeleteAfter = false;
+            photoEntry.hasSpoiler = false;
+            photoEntry.starsAmount = 0;
+
+            if (storyEntry.isVideo && (storyEntry.thumbPath == null || storyEntry.thumbPath.startsWith("vthumb://"))) {
+                try {
+                    photoEntry.imageId = Integer.parseInt(storyEntry.thumbPath.substring("vthumb://".length()));
+                } catch (NumberFormatException e) {
+                    photoEntry.imageId = 0;
+                }
+            }
+
+            return photoEntry;
+        }
+
+        public void send(StoryEntry storyEntry) {
+            parentAlert.applyCaption();
+
+            addToSelectedPhotos(fromStoryEntry(storyEntry), -1);
+            photoViewerProvider.sendButtonPressed(7, null, false, 0, false);
+        }
+    }
+
     private void openCamera(boolean animated) {
         if (cameraView == null || cameraInitAnimation != null || parentAlert.isDismissed()) {
             return;
@@ -2302,6 +2356,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         storyRecorder = StoryRecorder.getInstance(parentAlert.baseFragment.getParentActivity(), UserConfig.selectedAccount);
 
         storyRecorder.open(null, true, true);
+        storyRecorder.chatAttachmentDelegate = new ChatAttachmentDelegate();
 
 //        if (cameraView == null || cameraInitAnimation != null || parentAlert.isDismissed()) {
 //            return;

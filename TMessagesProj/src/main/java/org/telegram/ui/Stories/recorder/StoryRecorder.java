@@ -2988,6 +2988,22 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 outputEntry.peer = MessagesController.getInstance(currentAccount).getInputPeer(selectedDialogId);
             }
             previewView.updatePauseReason(3, true);
+
+            if (isChatAttachment) {
+                if (outputEntry == null || preparingUpload) {
+                    return;
+                }
+
+                previewView.updatePauseReason(5, true);
+                StoryPrivacySelector.save(currentAccount, outputEntry.privacy);
+                outputEntry.privacyRules.clear();
+                outputEntry.editedPrivacy = true;
+                applyPaintInBackground(() -> {
+                    uploadAndSendAsChatAttachment();
+                });
+                return;
+            }
+
             privacySheet = new StoryPrivacyBottomSheet(activity, outputEntry.period, resourcesProvider)
                     .setValue(outputEntry.privacy)
                     .setPeer(outputEntry.peer)
@@ -3126,6 +3142,66 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             applyPaintMessage();
             preparingUpload = false;
             uploadInternal(asStory);
+        });
+    }
+
+    public interface ChatAttachmentDelegate {
+        public void send(StoryEntry storyEntry);
+    }
+    public ChatAttachmentDelegate chatAttachmentDelegate;
+
+    private void uploadAndSendAsChatAttachment() {
+        if (preparingUpload) {
+            return;
+        }
+
+        applyFilter(null);
+        preparingUpload = true;
+        applyPaintInBackground(() -> {
+            applyPaintMessage();
+            preparingUpload = false;
+            if (outputEntry == null) {
+                close(true);
+                return;
+            }
+
+            destroyPhotoFilterView();
+            prepareThumb(outputEntry, false);
+            CharSequence[] caption = new CharSequence[] { captionEdit.getText() };
+            ArrayList<TLRPC.MessageEntity> captionEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(caption, true) : new ArrayList<>();
+            CharSequence[] pastCaption = new CharSequence[] { outputEntry.caption };
+            ArrayList<TLRPC.MessageEntity> pastEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(pastCaption, true) : new ArrayList<>();
+            outputEntry.editedCaption = !TextUtils.equals(outputEntry.caption, caption[0]) || !MediaDataController.entitiesEqual(captionEntities, pastEntities);
+            outputEntry.caption = new SpannableString(captionEdit.getText());
+
+            wasSend = true;
+            forceBackgroundVisible = true;
+            checkBackgroundVisibility();
+
+            if (fromSourceView != null) {
+                fromSourceView.show(true);
+                fromSourceView = null;
+            }
+            if (closeListener != null) {
+                closeListener.run();
+                closeListener = null;
+            }
+
+            if (activity instanceof LaunchActivity) {
+                ((LaunchActivity) activity).drawerLayoutContainer.post(() -> {
+                    if (waveEffect != null) {
+                        waveEffect.prepare();
+                    }
+                    close(true);
+                });
+            } else {
+                close(true);
+            }
+
+            if (chatAttachmentDelegate != null) {
+                chatAttachmentDelegate.send(outputEntry);
+            }
+            outputEntry = null;
         });
     }
 
