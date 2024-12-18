@@ -546,6 +546,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         }
 
         this.isChatAttachment = isChatAttachment;
+        previewHighlight.setVisibility(isChatAttachment ? View.GONE : View.VISIBLE);
         isReposting = false;
         prepareClosing = false;
 //        privacySelectorHintOpened = false;
