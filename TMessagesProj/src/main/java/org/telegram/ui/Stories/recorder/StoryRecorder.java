@@ -1735,7 +1735,10 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             final int w = right - left;
             final int h = bottom - top;
 
-            previewContainer.layout(0, 0, previewW, previewH);
+            int realW = (int) Math.ceil(previewH * 9f / 16f);
+            int previewInset = (realW - previewW) / 2;
+
+            previewContainer.layout(-previewInset, 0, previewW+previewInset, previewH);
             previewContainer.setPivotX(previewW * .5f);
             actionBarContainer.layout(0, t, previewW, t + actionBarContainer.getMeasuredHeight());
             controlContainer.layout(0, previewH - controlContainer.getMeasuredHeight() - b, previewW, previewH - b);
@@ -1745,6 +1748,13 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 captionEditOverlay.layout(0, 0, w, h);
             }
             flashViews.foregroundView.layout(0, 0, w, h);
+
+            int trashMargin = 16;
+            if(isChatAttachment) {
+                trashMargin += navbarContainer.getMeasuredHeight();
+            }
+            int trashB = previewH-trashMargin;
+            trash.layout(0, trashB - dp(120), realW, trashB);
 
             if (captionEdit.mentionContainer != null) {
                 captionEdit.mentionContainer.layout(0, 0, previewW, previewH);
@@ -1774,7 +1784,8 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             final int W = MeasureSpec.getSize(widthMeasureSpec);
             final int H = MeasureSpec.getSize(heightMeasureSpec);
 
-            measureChildExactly(previewContainer, previewW, previewH);
+            int realW = (int) Math.ceil(previewH * 9f / 16f);
+            measureChildExactly(previewContainer, realW, previewH);
             applyFilterMatrix();
             measureChildExactly(actionBarContainer, previewW, dp(56 + 56 + 38));
             measureChildExactly(controlContainer, previewW, dp(220));
@@ -2935,7 +2946,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         trash = new TrashView(context);
         trash.setAlpha(0f);
         trash.setVisibility(View.GONE);
-        previewContainer.addView(trash, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 120, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16));
+        previewContainer.addView(trash);
 
         previewHighlight = new PreviewHighlightView(context, currentAccount, resourcesProvider);
         previewContainer.addView(previewHighlight, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
@@ -3147,6 +3158,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
     public interface ChatAttachmentDelegate {
         public void send(StoryEntry storyEntry);
+        public String getChatTitle();
     }
     public ChatAttachmentDelegate chatAttachmentDelegate;
 
@@ -3418,6 +3430,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         @Override
         public boolean canRecordAudio() {
             return requestAudioPermission();
+        }
+
+        @Override
+        public boolean limitsEnabled() {
+            return !isChatAttachment;
         }
 
         @Override
@@ -4517,12 +4534,12 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 recordControl.setCollageProgress(0.0f, false);
             }
         }
+        if(isChatAttachment && toPage == PAGE_CAMERA) {
+            backButton.setImageResource(R.drawable.pip_close);
+        } else {
+            backButton.setImageResource(R.drawable.msg_photo_back);
+        }
         if (fromPage == PAGE_CAMERA) {
-            if(isChatAttachment && toPage == PAGE_CAMERA) {
-                backButton.setImageResource(R.drawable.pip_close);
-            } else {
-                backButton.setImageResource(R.drawable.msg_photo_back);
-            }
             setCameraFlashModeIcon(null, true);
             saveLastCameraBitmap(() -> cameraViewThumb.setImageDrawable(getCameraThumb()));
             if (draftSavedHint != null) {
@@ -4550,7 +4567,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             } else {
                 titleTextView.setRightPadding(AndroidUtilities.dp(48));
             }
-            downloadButton.setVisibility(View.VISIBLE);
+            downloadButton.setVisibility(isChatAttachment ? View.GONE : View.VISIBLE);
             if (outputEntry != null && outputEntry.isRepostMessage) {
                 getThemeButton().setVisibility(View.VISIBLE);
                 updateThemeButtonDrawable(false);
@@ -4569,7 +4586,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
 //            privacySelector.setStoryPeriod(outputEntry == null || !UserConfig.getInstance(currentAccount).isPremium() ? 86400 : outputEntry.period);
             captionEdit.setPeriod(outputEntry == null ? 86400 : outputEntry.period, false);
-            captionEdit.setPeriodVisible(!MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && (outputEntry == null || !outputEntry.isEdit));
+            captionEdit.setPeriodVisible(!isChatAttachment && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && (outputEntry == null || !outputEntry.isEdit));
             captionEdit.setHasRoundVideo(outputEntry != null && outputEntry.round != null);
             setReply();
             timelineView.setOpen(outputEntry == null || !outputEntry.isCollage() || !outputEntry.hasVideo(), false);
@@ -4660,6 +4677,8 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                     title.append(chat != null ? chat.title : "");
                 }
                 titleTextView.setText(title);
+            } else if(isChatAttachment) {
+                titleTextView.setText(chatAttachmentDelegate.getChatTitle());
             } else {
                 titleTextView.setText(getString(R.string.RecorderNewStory));
             }
@@ -5300,6 +5319,16 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                     timelineView.selectRound(false);
                 }
             }
+
+            @Override
+            public int getTrashPosition() {
+                int position = super.getTrashPosition();
+
+                if(isChatAttachment) {
+                    position += navbarContainer.getMeasuredHeight();
+                }
+                return position;
+            }
         };
         paintView.setHasAudio(outputEntry != null && outputEntry.audioPath != null);
         paintView.setBlurManager(blurManager);
@@ -5413,7 +5442,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             if (paintView != null) {
                 paintView.clearSelection();
             }
-            downloadButton.setVisibility(View.VISIBLE);
+            downloadButton.setVisibility(isChatAttachment ? View.GONE : View.VISIBLE);
             if (outputEntry != null && outputEntry.isRepostMessage) {
                 getThemeButton().setVisibility(View.VISIBLE);
                 updateThemeButtonDrawable(false);
@@ -6192,7 +6221,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext(), resourcesProvider);
         builder.setTitle(getString(R.string.DiscardChanges));
         builder.setMessage(getString(R.string.PhotoEditorDiscardAlert));
-        if (outputEntry != null && !outputEntry.isEdit) {
+        if (outputEntry != null && !outputEntry.isEdit && !isChatAttachment) {
             builder.setNeutralButton(getString(outputEntry.isDraft ? R.string.StoryKeepDraft : R.string.StorySaveDraft), (di, i) -> {
                 if (outputEntry == null) {
                     return;

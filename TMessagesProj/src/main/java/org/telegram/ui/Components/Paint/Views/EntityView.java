@@ -67,6 +67,10 @@ public class EntityView extends FrameLayout {
         default boolean isEntityDeletable() {
             return true;
         }
+
+        default int getTrashPosition() {
+            return dp(76);
+        }
     }
 
     private float previousLocationX,  previousLocationY;
@@ -231,7 +235,7 @@ public class EntityView extends FrameLayout {
             updateTrash(
                 (delegate == null || delegate.isEntityDeletable()) &&
                     !multitouch &&
-                    MathUtils.distance(x, y,  ((View) getParent()).getWidth() / 2f, ((View) getParent()).getHeight() - dp(76)) < dp(32)
+                    MathUtils.distance(x, y,  ((View) getParent()).getWidth() / 2f, ((View) getParent()).getHeight() - delegate.getTrashPosition()) < dp(32)
             );
 
             bounce.setPressed(false);

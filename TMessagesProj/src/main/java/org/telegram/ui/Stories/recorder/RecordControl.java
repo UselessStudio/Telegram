@@ -67,6 +67,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
         void onVideoRecordLocked();
         boolean canRecordAudio();
         void onCheckClick();
+        boolean limitsEnabled();
     }
 
     public void startAsVideo(boolean isVideo) {
@@ -441,9 +442,8 @@ public class RecordControl extends View implements FlashViews.Invertable {
         outlineFilledPaint.setStrokeWidth(strokeWidth);
         outlineFilledPaint.setAlpha((int) (0xFF * Math.max(.7f * recordingLoading, 1f - recordEndT)));
 
-        if (recordingLoading <= 0) {
-            canvas.drawArc(AndroidUtilities.rectTmp, -90, sweepAngle, false, outlineFilledPaint);
-        } else {
+
+        if (recordingLoading > 0){
             final long now = SystemClock.elapsedRealtime();
             CircularProgressDrawable.getSegments((now - recordingLoadingStart) % 5400, loadingSegments);
             invalidate();
@@ -458,6 +458,8 @@ public class RecordControl extends View implements FlashViews.Invertable {
             }
 
             canvas.drawArc(AndroidUtilities.rectTmp, center - amplitude, amplitude * 2, false, outlineFilledPaint);
+        } else if(delegate.limitsEnabled()) {
+            canvas.drawArc(AndroidUtilities.rectTmp, -90, sweepAngle, false, outlineFilledPaint);
         }
 
         if (recording) {
@@ -466,7 +468,7 @@ public class RecordControl extends View implements FlashViews.Invertable {
             if (duration / 1000L != lastDuration / 1000L) {
                 delegate.onVideoDuration(duration / 1000L);
             }
-            if (duration >= MAX_DURATION) {
+            if (duration >= MAX_DURATION && delegate.limitsEnabled()) {
                 post(() -> {
                     recording = false;
                     longpressRecording = false;

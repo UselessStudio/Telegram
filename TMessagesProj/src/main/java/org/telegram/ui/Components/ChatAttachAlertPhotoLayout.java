@@ -79,11 +79,13 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.VideoEditedInfo;
 import org.telegram.messenger.camera.CameraController;
@@ -2343,6 +2345,22 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
             addToSelectedPhotos(fromStoryEntry(storyEntry), -1);
             photoViewerProvider.sendButtonPressed(7, null, false, 0, false);
+        }
+
+        @Override
+        public String getChatTitle() {
+            if (!(parentAlert.baseFragment instanceof ChatActivity)) return null;
+            long dialog = ((ChatActivity) parentAlert.baseFragment).getDialogId();
+            String title;
+
+            if (dialog >= 0) {
+                TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(dialog);
+                title = UserObject.getUserName(user);
+            } else {
+                TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-dialog);
+                title = chat != null ? chat.title : "";
+            }
+            return title;
         }
     }
 

@@ -549,10 +549,10 @@ public class DualCameraView extends CameraView {
 
     public static boolean dualAvailableDefault(Context context, boolean withWhitelist) {
         boolean def = (
-            SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE &&
+//            SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE &&
             Camera.getNumberOfCameras() > 1 &&
-            SharedConfig.allowPreparingHevcPlayers() &&
-            context != null && supportsDualCameraStream(context)
+            SharedConfig.allowPreparingHevcPlayers() //&&
+//            context != null && supportsDualCameraStream(context)
         );
         if (def) {
             def = context.getPackageManager().hasSystemFeature("android.hardware.camera.concurrent");
