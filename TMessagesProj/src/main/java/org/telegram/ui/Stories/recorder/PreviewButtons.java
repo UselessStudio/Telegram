@@ -48,6 +48,9 @@ public class PreviewButtons extends FrameLayout {
     public static final int BUTTON_SHARE = 4;
 
     private View shadowView;
+    public void setShadowVisible(boolean visible) {
+        shadowView.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
 
     private ArrayList<ButtonView> buttons = new ArrayList<>();
     public ShareButtonView shareButton;

@@ -561,11 +561,10 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         cameraViewThumb.setImageDrawable(getCameraThumb());
         if(isChatAttachment) {
             backButton.setImageResource(R.drawable.pip_close);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                previewContainer.setOutlineProvider(null);
-            }
+            previewButtons.setShadowVisible(false);
         } else {
             backButton.setImageResource(R.drawable.msg_photo_back);
+            previewButtons.setShadowVisible(true);
         }
 
         if (botId == 0) {
@@ -1448,7 +1447,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
             final int hFromW = (int) Math.ceil(w / 9f * 16f);
             underControls = dp(48);
-            if (hFromW + underControls <= H - navbar) {
+            if (isChatAttachment) {
+                previewW = W;
+                previewH = H;
+                underStatusBar = false;
+            } else if (hFromW + underControls <= H - navbar) {
                 previewW = w;
                 previewH = hFromW;
                 underStatusBar = previewH + underControls > H - navbar - statusbar;
@@ -1458,10 +1461,6 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 previewW = (int) Math.ceil(previewH * 9f / 16f);
             }
 
-            if (isChatAttachment && currentEditMode == EDIT_MODE_NONE) {
-                previewW = W;
-                previewH = H - (currentPage == PAGE_PREVIEW ? insetBottom : 0);
-            }
             underControls = Utilities.clamp(H - previewH - (underStatusBar ? 0 : statusbar), dp(68), dp(48));
 
             int flags = getSystemUiVisibility();
@@ -1575,7 +1574,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 b = t + previewH + underControls;
             }
 
-            if (isChatAttachment && currentEditMode == EDIT_MODE_NONE) {
+            if (isChatAttachment) {
                 containerView.layout(l, 0, r, H);
             } else {
                 containerView.layout(l, t, r, b);
@@ -1729,7 +1728,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
             final int t = underStatusBar || isChatAttachment ? insetTop : 0;
             int b = isChatAttachment ? navbarContainer.getMeasuredHeight() : 0;
-            if (isChatAttachment && currentPage == PAGE_CAMERA) {
+            if(isChatAttachment) {
                 b += insetBottom;
             }
 
@@ -1740,10 +1739,14 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             int previewInset = (realW - previewW) / 2;
 
             previewContainer.layout(-previewInset, 0, previewW+previewInset, previewH);
-            previewContainer.setPivotX(previewW * .5f);
+            previewContainer.setPivotX(realW * .5f);
             actionBarContainer.layout(0, t, previewW, t + actionBarContainer.getMeasuredHeight());
             controlContainer.layout(0, previewH - controlContainer.getMeasuredHeight() - b, previewW, previewH - b);
             navbarContainer.layout(0, previewH - b, previewW, previewH + navbarContainer.getMeasuredHeight() - b);
+            if(captionEdit.keyboardShown && isChatAttachment) {
+                b -= insetBottom;
+            }
+            captionContainer.layout(0, 0, previewW, previewH - b);
             captionContainer.layout(0, 0, previewW, previewH - b);
             if (captionEditOverlay != null) {
                 captionEditOverlay.layout(0, 0, w, h);
@@ -1759,14 +1762,15 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
             if (captionEdit.mentionContainer != null) {
                 captionEdit.mentionContainer.layout(0, 0, previewW, previewH);
+                captionEdit.setInset(b);
                 captionEdit.updateMentionsLayoutPosition();
             }
 
             if (photoFilterView != null) {
-                photoFilterView.layout(0, 0, photoFilterView.getMeasuredWidth(), photoFilterView.getMeasuredHeight());
+                photoFilterView.layout(0, t, photoFilterView.getMeasuredWidth(), photoFilterView.getMeasuredHeight() - b);
             }
             if (paintView != null) {
-                paintView.layout(0, 0, paintView.getMeasuredWidth(), paintView.getMeasuredHeight());
+                paintView.layout(0, t, paintView.getMeasuredWidth(), paintView.getMeasuredHeight() - b);
             }
 
             for (int i = 0; i < getChildCount(); ++i) {
@@ -4608,7 +4612,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             videoError = false;
             final boolean isBot = outputEntry != null && outputEntry.botId != 0;
             final boolean isEdit = outputEntry != null && outputEntry.isEdit;
-            previewButtons.setShareText(getString(isEdit ? R.string.Done : isBot ? R.string.UploadBotPreview : R.string.Next), !isBot);
+            previewButtons.setShareText(getString(isEdit || isChatAttachment ? R.string.Done : isBot ? R.string.UploadBotPreview : R.string.Next), !isBot);
             coverTimelineView.setVisibility(View.GONE);
             coverButton.setVisibility(View.GONE);
 //            privacySelector.set(outputEntry, false);
@@ -4912,15 +4916,20 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
         int rightMargin = 0;
         int bottomMargin = 0;
         if (editMode == EDIT_MODE_FILTER) {
-            previewContainer.setPivotY(previewContainer.getMeasuredHeight() * .2f);
+            float pivot = isChatAttachment ? .3f : .2f;
+            previewContainer.setPivotY(previewContainer.getMeasuredHeight() * pivot);
             bottomMargin = dp(164);
         } else if (editMode == EDIT_MODE_PAINT) {
-            previewContainer.setPivotY(previewContainer.getMeasuredHeight() * .6f);
+            float pivot = isChatAttachment ? .45f : .6f;
+            previewContainer.setPivotY(previewContainer.getMeasuredHeight() * pivot);
             bottomMargin = dp(40);
         } else if (editMode == EDIT_MODE_TIMELINE) {
             previewContainer.setPivotY(0);
             bottomMargin = timelineView.getContentHeight() + dp(8);
 //            rightMargin = dp(46);
+        }
+        if(isChatAttachment && editMode != EDIT_MODE_TIMELINE && editMode != EDIT_MODE_NONE) {
+            bottomMargin += navbarContainer.getMeasuredHeight() + insetBottom + dp(20);
         }
 
         float scale = 1f;

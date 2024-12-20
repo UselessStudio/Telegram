@@ -1197,9 +1197,14 @@ public class CaptionContainerView extends FrameLayout {
         return editText.getText();
     }
 
+    private int inset = 0;
+    public void setInset(int inset) {
+        this.inset = inset;
+    }
+
     public void updateMentionsLayoutPosition() {
         if (mentionContainer != null) {
-            float y = ((View) getParent()).getTranslationY() - heightAnimated.get();
+            float y = ((View) getParent()).getTranslationY() - heightAnimated.get() - inset;
             if (mentionContainer.getY() != y) {
                 mentionContainer.setTranslationY(y);
                 mentionContainer.invalidate();
