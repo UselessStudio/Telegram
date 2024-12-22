@@ -2789,7 +2789,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
             if (dialog >= 0) {
                 TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(dialog);
-                title = UserObject.getUserName(user);
+                if (UserObject.isUserSelf(user)) {
+                    title = LocaleController.getString(R.string.SavedMessages);
+                } else {
+                    title = UserObject.getUserName(user);
+                }
             } else {
                 TLRPC.Chat chat = MessagesController.getInstance(UserConfig.selectedAccount).getChat(-dialog);
                 title = chat != null ? chat.title : "";
