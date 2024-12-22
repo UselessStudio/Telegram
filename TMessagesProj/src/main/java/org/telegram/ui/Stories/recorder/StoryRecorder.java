@@ -3014,9 +3014,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 StoryPrivacySelector.save(currentAccount, outputEntry.privacy);
                 outputEntry.privacyRules.clear();
                 outputEntry.editedPrivacy = true;
-                applyPaintInBackground(() -> {
-                    uploadAndSendAsChatAttachment();
-                });
+                uploadAndSendAsChatAttachment();
                 return;
             }
 
@@ -3162,7 +3160,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
     }
 
     public interface ChatAttachmentDelegate {
-        public void send(StoryEntry storyEntry);
+        public void send(StoryEntry storyEntry, FrameLayout view, Runnable runnable);
         public String getChatTitle();
     }
     public ChatAttachmentDelegate chatAttachmentDelegate;
@@ -3172,10 +3170,11 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             return;
         }
 
-        applyFilter(null);
         preparingUpload = true;
         applyPaintInBackground(() -> {
+            applyPaint();
             applyPaintMessage();
+            applyFilter(null);
             preparingUpload = false;
             if (outputEntry == null) {
                 close(true);
@@ -3184,41 +3183,31 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
             destroyPhotoFilterView();
             prepareThumb(outputEntry, false);
-            CharSequence[] caption = new CharSequence[] { captionEdit.getText() };
-            ArrayList<TLRPC.MessageEntity> captionEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(caption, true) : new ArrayList<>();
-            CharSequence[] pastCaption = new CharSequence[] { outputEntry.caption };
-            ArrayList<TLRPC.MessageEntity> pastEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(pastCaption, true) : new ArrayList<>();
-            outputEntry.editedCaption = !TextUtils.equals(outputEntry.caption, caption[0]) || !MediaDataController.entitiesEqual(captionEntities, pastEntities);
-            outputEntry.caption = new SpannableString(captionEdit.getText());
 
-            wasSend = true;
-            forceBackgroundVisible = true;
-            checkBackgroundVisibility();
+            chatAttachmentDelegate.send(outputEntry, previewContainer, () -> {
+                CharSequence[] caption = new CharSequence[] { captionEdit.getText() };
+                ArrayList<TLRPC.MessageEntity> captionEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(caption, true) : new ArrayList<>();
+                CharSequence[] pastCaption = new CharSequence[] { outputEntry.caption };
+                ArrayList<TLRPC.MessageEntity> pastEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(pastCaption, true) : new ArrayList<>();
+                outputEntry.editedCaption = !TextUtils.equals(outputEntry.caption, caption[0]) || !MediaDataController.entitiesEqual(captionEntities, pastEntities);
+                outputEntry.caption = new SpannableString(captionEdit.getText());
 
-            if (fromSourceView != null) {
-                fromSourceView.show(true);
-                fromSourceView = null;
-            }
-            if (closeListener != null) {
-                closeListener.run();
-                closeListener = null;
-            }
+                wasSend = true;
+                forceBackgroundVisible = true;
+                checkBackgroundVisibility();
 
-            if (activity instanceof LaunchActivity) {
-                ((LaunchActivity) activity).drawerLayoutContainer.post(() -> {
-                    if (waveEffect != null) {
-                        waveEffect.prepare();
-                    }
-                    close(true);
-                });
-            } else {
+                if (fromSourceView != null) {
+                    fromSourceView.show(true);
+                    fromSourceView = null;
+                }
+                if (closeListener != null) {
+                    closeListener.run();
+                    closeListener = null;
+                }
+
                 close(true);
-            }
-
-            if (chatAttachmentDelegate != null) {
-                chatAttachmentDelegate.send(outputEntry);
-            }
-            outputEntry = null;
+                outputEntry = null;
+            });
         });
     }
 
