@@ -2808,20 +2808,57 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
         cameraExpanded = true;
 
-//        cameraView.destroy(false, null);
-        hideCamera(false);
-        storyRecorder = StoryRecorder.getInstance(parentAlert.baseFragment.getParentActivity(), UserConfig.selectedAccount);
+        Runnable afterOpen = () -> {
+            hideCamera(false);
+            storyRecorder = StoryRecorder.getInstance(parentAlert.baseFragment.getParentActivity(), UserConfig.selectedAccount);
 
-        storyRecorder.open(null, true, true);
-        storyRecorder.chatAttachmentDelegate = new ChatAttachmentDelegate();
-        storyRecorder.setOnCloseListener(() -> {
-            showCamera();
+            storyRecorder.open(null, false, true);
+            storyRecorder.chatAttachmentDelegate = new ChatAttachmentDelegate();
+            storyRecorder.setOnCloseListener(() -> {
+                showCamera();
+            });
+        };
+
+        if(!animated) {
+            afterOpen.run();
+            return;
+        }
+
+        if (cameraView == null || cameraInitAnimation != null || parentAlert.isDismissed()) {
+            return;
+        }
+        cameraView.initTexture();
+        setCameraOpenProgress(0);
+        cameraAnimationInProgress = true;
+        notificationsLocker.lock();
+        ArrayList<Animator> animators = new ArrayList<>();
+        animators.add(ObjectAnimator.ofFloat(this, "cameraOpenProgress", 0.0f, 1.0f));
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.playTogether(animators);
+        animatorSet.setDuration(350);
+        animatorSet.setInterpolator(CubicBezierInterpolator.DEFAULT);
+        animatorSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animator) {
+                notificationsLocker.unlock();
+                cameraAnimationInProgress = false;
+                if (cameraView != null) {
+                    if (Build.VERSION.SDK_INT >= 21) {
+                        cameraView.invalidateOutline();
+                    } else {
+                        cameraView.invalidate();
+                    }
+                }
+                if (cameraOpened) {
+                    parentAlert.delegate.onCameraOpened();
+                }
+                if (Build.VERSION.SDK_INT >= 21 && cameraView != null) {
+                    cameraView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);
+                }
+                afterOpen.run();
+            }
         });
-
-//        if (cameraView == null || cameraInitAnimation != null || parentAlert.isDismissed()) {
-//            return;
-//        }
-//        cameraView.initTexture();
+        animatorSet.start();
 //        if (shouldLoadAllMedia()) {
 //            tooltipTextView.setVisibility(VISIBLE);
 //        } else {
