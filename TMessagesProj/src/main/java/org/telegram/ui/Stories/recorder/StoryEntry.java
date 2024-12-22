@@ -143,6 +143,7 @@ public class StoryEntry {
     public int gradientTopColor, gradientBottomColor;
 
     public CharSequence caption;
+    public boolean caption_above;
     public boolean captionEntitiesAllowed = true;
     public StoryPrivacyBottomSheet.StoryPrivacy privacy;
     public final ArrayList<TLRPC.InputPrivacyRule> privacyRules = new ArrayList<>();

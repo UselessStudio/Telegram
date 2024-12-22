@@ -143,7 +143,7 @@ public class CaptionPhotoViewer extends CaptionContainerView {
 
     private final AnimatedFloat moveButtonAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
     private final AnimatedFloat moveButtonExpandedAnimated = new AnimatedFloat(this, 0, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
-    private boolean moveButtonVisible;
+    protected boolean moveButtonVisible;
     private boolean moveButtonExpanded;
 
     public void expandMoveButton() {
@@ -455,7 +455,14 @@ public class CaptionPhotoViewer extends CaptionContainerView {
             if (moveButtonBounce.isPressed()) {
                 if (event.getAction() == MotionEvent.ACTION_UP) {
                     onMoveButtonClick();
-                    moveButtonText.setText(getString(isAtTop() ? R.string.MoveCaptionDown : R.string.MoveCaptionUp), true);
+//                    moveButtonText.setText(getString(isAtTop() ? R.string.MoveCaptionDown : R.string.MoveCaptionUp), true);
+                    if (isAtTop()) {
+                        moveButtonText.setText(getString(R.string.MoveCaptionDown));
+                        moveButtonIcon = getContext().getResources().getDrawable(R.drawable.menu_link_below);
+                    } else {
+                        moveButtonText.setText(getString(R.string.MoveCaptionUp));
+                        moveButtonIcon = getContext().getResources().getDrawable(R.drawable.menu_link_above);
+                    }
                 }
                 moveButtonBounce.setPressed(false);
                 return true;

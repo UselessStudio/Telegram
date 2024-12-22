@@ -128,6 +128,7 @@ import org.telegram.ui.Components.FilterShaders;
 import org.telegram.ui.Components.GestureDetectorFixDoubleTap;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.MessagePreviewView;
 import org.telegram.ui.Components.Paint.RenderView;
 import org.telegram.ui.Components.Paint.Views.EntityView;
 import org.telegram.ui.Components.Paint.Views.MessageEntityView;
@@ -140,6 +141,7 @@ import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.ThanosEffect;
@@ -558,6 +560,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             windowManager.addView(windowView, windowLayoutParams);
         }
 
+        captionEdit.setShowMoveButtonVisible(isChatAttachment, false);
         cameraViewThumb.setImageDrawable(getCameraThumb());
         if(isChatAttachment) {
             backButton.setImageResource(R.drawable.pip_close);
@@ -1746,7 +1749,6 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             if(captionEdit.keyboardShown && isChatAttachment) {
                 b -= insetBottom;
             }
-            captionContainer.layout(0, 0, previewW, previewH - b);
             captionContainer.layout(0, 0, previewW, previewH - b);
             if (captionEditOverlay != null) {
                 captionEditOverlay.layout(0, 0, w, h);
@@ -3190,6 +3192,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
             ArrayList<TLRPC.MessageEntity> pastEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(pastCaption, true) : new ArrayList<>();
             outputEntry.editedCaption = !TextUtils.equals(outputEntry.caption, caption[0]) || !MediaDataController.entitiesEqual(captionEntities, pastEntities);
             outputEntry.caption = new SpannableString(captionEdit.getText());
+            outputEntry.caption_above = captionEdit.isAtTop();
 
             chatAttachmentDelegate.send(outputEntry, previewContainer, () -> {
                 wasSend = true;

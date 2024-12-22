@@ -2772,6 +2772,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
         public void send(StoryEntry storyEntry, FrameLayout container, Runnable runnable) {
             parentAlert.applyCaption();
+            parentAlert.captionAbove = storyEntry.caption_above;
 
             fromStoryEntry(storyEntry, container, (photoEntry) -> {
                 runnable.run();
@@ -2803,11 +2804,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
         cameraExpanded = true;
 
-        cameraView.destroy(false, null);
+//        cameraView.destroy(false, null);
+        hideCamera(false);
         storyRecorder = StoryRecorder.getInstance(parentAlert.baseFragment.getParentActivity(), UserConfig.selectedAccount);
 
         storyRecorder.open(null, true, true);
         storyRecorder.chatAttachmentDelegate = new ChatAttachmentDelegate();
+        storyRecorder.setOnCloseListener(() -> {
+            showCamera();
+        });
 
 //        if (cameraView == null || cameraInitAnimation != null || parentAlert.isDismissed()) {
 //            return;

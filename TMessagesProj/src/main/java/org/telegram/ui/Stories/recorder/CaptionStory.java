@@ -42,6 +42,7 @@ import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.BlobDrawable;
 import org.telegram.ui.Components.BlurringShader;
 import org.telegram.ui.Components.ButtonBounce;
+import org.telegram.ui.Components.CaptionPhotoViewer;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
@@ -50,7 +51,7 @@ import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.Text;
 import org.telegram.ui.Components.WaveDrawable;
 
-public class CaptionStory extends CaptionContainerView {
+public class CaptionStory extends CaptionPhotoViewer {
 
     public ButtonBounce roundButtonBounce;
     public ImageView roundButton;
@@ -68,14 +69,14 @@ public class CaptionStory extends CaptionContainerView {
 
 
     public CaptionStory(Context context, FrameLayout rootView, SizeNotifierFrameLayout sizeNotifierFrameLayout, FrameLayout containerView, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager) {
-        super(context, rootView, sizeNotifierFrameLayout, containerView, resourcesProvider, blurManager);
+        super(context, rootView, sizeNotifierFrameLayout, containerView, resourcesProvider, blurManager, null);
 
         roundButton = new ImageView(context);
         roundButtonBounce = new ButtonBounce(roundButton);
         roundButton.setImageResource(R.drawable.input_video_story);
         roundButton.setBackground(Theme.createSelectorDrawable(Theme.ACTION_BAR_WHITE_SELECTOR_COLOR, RIPPLE_MASK_CIRCLE_20DP, dp(18)));
         roundButton.setScaleType(ImageView.ScaleType.CENTER);
-        addView(roundButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 11, 10));
+        addView(roundButton, LayoutHelper.createFrame(44, 44, Gravity.RIGHT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM), 0, 0, 11, 10));
         roundButton.setOnClickListener(e -> {
             showRemoveRoundAlert();
         });
@@ -157,6 +158,25 @@ public class CaptionStory extends CaptionContainerView {
     private float slideProgress;
     private float lockProgress;
     private long startTime;
+
+    private boolean captionAbove = false;
+
+    @Override
+    protected void onMoveButtonClick() {
+        captionAbove = !captionAbove;
+        roundButton.setLayoutParams(LayoutHelper.createFrame(44, 44, Gravity.RIGHT | (isAtTop() ? Gravity.TOP : Gravity.BOTTOM), 0, isAtTop() ? 10 : 0, 11, isAtTop() ? 0 : 10));
+        editText.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, (isAtTop() ? Gravity.TOP : Gravity.BOTTOM) | Gravity.FILL_HORIZONTAL, 12, 12, 12 + additionalRightMargin(), 12));
+        editText.getEditText().setGravity(isAtTop() ? Gravity.TOP : Gravity.BOTTOM);
+        if(editText.isKeyboardVisible()) {
+            editText.closeKeyboard();
+            updateKeyboard(editText.getKeyboardHeight());
+        }
+    }
+
+    @Override
+    protected boolean isAtTop() {
+        return captionAbove;
+    }
 
     @Override
     public void drawOver(Canvas canvas, RectF bounds) {
@@ -630,6 +650,8 @@ public class CaptionStory extends CaptionContainerView {
             recording = true;
             startTime = System.currentTimeMillis();
             setCollapsed(true, Integer.MAX_VALUE);
+            boolean shouldShowMoveButton = moveButtonVisible;
+            setShowMoveButtonVisible(false, true);
             invalidateDrawOver2();
 
             putRecorder(currentRecorder = new RoundVideoRecorder(getContext()) {
@@ -641,6 +663,7 @@ public class CaptionStory extends CaptionContainerView {
                 @Override
                 public void stop() {
                     super.stop();
+                    setShowMoveButtonVisible(shouldShowMoveButton, true);
                     if (recording) {
                         releaseRecord(true, false);
                     }

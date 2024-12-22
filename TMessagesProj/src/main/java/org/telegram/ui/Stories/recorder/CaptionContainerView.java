@@ -571,6 +571,8 @@ public class CaptionContainerView extends FrameLayout {
                 parentKeyboardAnimator.setDuration(640);
             }
             parentKeyboardAnimator.start();
+        } else {
+            parent.setTranslationY(0);
         }
 
         toKeyboardShow = keyboardHeight > AndroidUtilities.dp(20);
@@ -1201,10 +1203,13 @@ public class CaptionContainerView extends FrameLayout {
     public void setInset(int inset) {
         this.inset = inset;
     }
+    public int getInset() {
+        return inset;
+    }
 
     public void updateMentionsLayoutPosition() {
         if (mentionContainer != null) {
-            float y = ((View) getParent()).getTranslationY() - heightAnimated.get() - inset;
+            float y = ((View) getParent()).getTranslationY() - heightAnimated.get() - (isAtTop() ? 0 : inset);
             if (mentionContainer.getY() != y) {
                 mentionContainer.setTranslationY(y);
                 mentionContainer.invalidate();
