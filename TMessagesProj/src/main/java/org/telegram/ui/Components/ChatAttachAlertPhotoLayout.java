@@ -2722,6 +2722,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                         photoEntry.invert = storyEntry.invert;
                         photoEntry.isVideo = true;
                         photoEntry.thumbPath = storyEntry.thumbPath;
+                        photoEntry.caption = storyEntry.caption.toString().trim();
 
                         processingVideo = false;
                         callback.run(photoEntry);
@@ -2759,6 +2760,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     photoEntry.invert = storyEntry.invert;
                     photoEntry.isVideo = false;
                     photoEntry.thumbPath = storyEntry.thumbPath;
+                    photoEntry.caption = storyEntry.caption.toString().trim();
 
                     callback.run(photoEntry);
                 }

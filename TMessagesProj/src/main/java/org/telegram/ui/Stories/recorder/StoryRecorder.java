@@ -3183,15 +3183,14 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 
             destroyPhotoFilterView();
             prepareThumb(outputEntry, false);
+            CharSequence[] caption = new CharSequence[] { captionEdit.getText() };
+            ArrayList<TLRPC.MessageEntity> captionEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(caption, true) : new ArrayList<>();
+            CharSequence[] pastCaption = new CharSequence[] { outputEntry.caption };
+            ArrayList<TLRPC.MessageEntity> pastEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(pastCaption, true) : new ArrayList<>();
+            outputEntry.editedCaption = !TextUtils.equals(outputEntry.caption, caption[0]) || !MediaDataController.entitiesEqual(captionEntities, pastEntities);
+            outputEntry.caption = new SpannableString(captionEdit.getText());
 
             chatAttachmentDelegate.send(outputEntry, previewContainer, () -> {
-                CharSequence[] caption = new CharSequence[] { captionEdit.getText() };
-                ArrayList<TLRPC.MessageEntity> captionEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(caption, true) : new ArrayList<>();
-                CharSequence[] pastCaption = new CharSequence[] { outputEntry.caption };
-                ArrayList<TLRPC.MessageEntity> pastEntities = MessagesController.getInstance(currentAccount).storyEntitiesAllowed() ? MediaDataController.getInstance(currentAccount).getEntities(pastCaption, true) : new ArrayList<>();
-                outputEntry.editedCaption = !TextUtils.equals(outputEntry.caption, caption[0]) || !MediaDataController.entitiesEqual(captionEntities, pastEntities);
-                outputEntry.caption = new SpannableString(captionEdit.getText());
-
                 wasSend = true;
                 forceBackgroundVisible = true;
                 checkBackgroundVisibility();
