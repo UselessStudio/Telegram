@@ -2489,6 +2489,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
                 canvas.restore();
             }
         };
+        captionEdit.isChatAttachment = isChatAttachment;
         captionEdit.setAccount(currentAccount);
         captionEdit.setUiBlurBitmap(this::getUiBlurBitmap);
         Bulletin.addDelegate(captionContainer, new Bulletin.Delegate() {
@@ -4580,6 +4581,7 @@ public class StoryRecorder implements NotificationCenter.NotificationCenterDeleg
 //            privacySelector.setStoryPeriod(outputEntry == null || !UserConfig.getInstance(currentAccount).isPremium() ? 86400 : outputEntry.period);
             captionEdit.setPeriod(outputEntry == null ? 86400 : outputEntry.period, false);
             captionEdit.setPeriodVisible(!isChatAttachment && !MessagesController.getInstance(currentAccount).premiumFeaturesBlocked() && (outputEntry == null || !outputEntry.isEdit));
+            captionEdit.isChatAttachment = isChatAttachment;
             captionEdit.setHasRoundVideo(outputEntry != null && outputEntry.round != null);
             setReply();
             timelineView.setOpen(outputEntry == null || !outputEntry.isCollage() || !outputEntry.hasVideo(), false);

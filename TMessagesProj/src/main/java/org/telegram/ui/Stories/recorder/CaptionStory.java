@@ -64,6 +64,8 @@ public class CaptionStory extends CaptionContainerView {
     private int periodIndex = 0;
 
     private Drawable flipButton;
+    public boolean isChatAttachment;
+
 
     public CaptionStory(Context context, FrameLayout rootView, SizeNotifierFrameLayout sizeNotifierFrameLayout, FrameLayout containerView, Theme.ResourcesProvider resourcesProvider, BlurringShader.BlurManager blurManager) {
         super(context, rootView, sizeNotifierFrameLayout, containerView, resourcesProvider, blurManager);
@@ -351,7 +353,7 @@ public class CaptionStory extends CaptionContainerView {
                 canvas.restore();
             }
 
-            if (periodButton.getVisibility() == View.INVISIBLE || collapsedT.get() > 0) {
+            if ((periodButton.getVisibility() == View.INVISIBLE || collapsedT.get() > 0) && !isChatAttachment) {
                 canvas.save();
                 canvas.translate(periodButton.getX() + dp(180) * (1f - cancel), periodButton.getY());
                 periodButton.draw(canvas);
@@ -470,6 +472,10 @@ public class CaptionStory extends CaptionContainerView {
     public void setPeriodVisible(boolean visible) {
         periodVisible = visible;
         periodButton.setVisibility(periodVisible && !keyboardShown ? View.VISIBLE : View.GONE);
+
+        if (isChatAttachment) {
+            periodButton.setVisibility(View.GONE);
+        }
     }
 
     public void setPeriod(int period, boolean animated) {
@@ -510,6 +516,10 @@ public class CaptionStory extends CaptionContainerView {
             periodButton.setVisibility(periodVisible ? View.VISIBLE : View.GONE);
             roundButton.setVisibility(View.VISIBLE);
         }
+
+        if (isChatAttachment) {
+            periodButton.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -523,6 +533,10 @@ public class CaptionStory extends CaptionContainerView {
         periodButton.setVisibility(!show && periodVisible ? View.VISIBLE : View.GONE);
         roundButton.setVisibility(!show ? View.VISIBLE : View.GONE);
         if (show) {
+            periodButton.setVisibility(View.GONE);
+        }
+
+        if (isChatAttachment) {
             periodButton.setVisibility(View.GONE);
         }
     }
@@ -587,7 +601,7 @@ public class CaptionStory extends CaptionContainerView {
     private final Runnable doneCancel = () -> {
         setCollapsed(false, Integer.MIN_VALUE);
         roundButton.setVisibility(VISIBLE);
-        periodButton.setVisibility(VISIBLE);
+        periodButton.setVisibility(isChatAttachment ? View.GONE : View.VISIBLE);
     };
 
     private boolean roundButtonTouchEvent(MotionEvent ev) {
